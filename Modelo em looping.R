@@ -5,23 +5,7 @@ library(lme4)
 library(parameters)
 library(splines)
 
-df<- readRDS("~/ENEM/base de referencia 2.rds")
-#library(readxl)
-
-#IDH_2010 <- read_excel("IDH_2010.xls")
-#A<-IDH_2010  %>% mutate(CO_MUNICIPIO_RESIDENCIA=as.character(`Código do Município`))%>% 
-#  select(Município,CO_MUNICIPIO_RESIDENCIA,IDHM,`IDHM Educação`,`IDHM Renda`,`Renda per capita`)
-#
-#df<-left_join(df,A,by = "CO_MUNICIPIO_RESIDENCIA")
-#saveRDS(df, "base de referencia 2.rds")
-#df<-left_join(df,A,by = "CO_MUNICIPIO_RESIDENCIA")
-
-df2 <-df2 %>% select(NU_NOTA_REDACAO,NU_NOTA_OBJETIVA,no2_ppb,o3_ppb,pm25_ugm3,NU_ANO,IDHM,SG_UF_RESIDENCIA,
-                    Q15,Q10,TP_DEPENDENCIA_ADM_ESC,TP_SEXO,TP_LOCALIZACAO_ESC) %>% 
-  drop_na(NU_NOTA_REDACAO,NU_NOTA_OBJETIVA,no2_ppb,o3_ppb,pm25_ugm3,SG_UF_RESIDENCIA,TP_SEXO)#selecionar variaveis de interesse 
-
-rm(list=setdiff(ls(), "df2"))
-
+df2<- readRDS("ENEM_merged.rds")
 
 df2[,1:7] <- lapply(df2[,1:7], as.numeric)
 df2[,8:13] <- lapply(df2[,8:13], as.factor)
