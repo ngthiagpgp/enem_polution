@@ -8,15 +8,14 @@ Gardin, Thiago; Requia, Weeberb. Air quality and individual-level academic perfo
 Several studies seek to determine the association between pollution and its health effects. This article reports a study that investigates the association between air pollution and academic performance at the individual level of Brazilian students. From a sample of more than 15 million students who took the  brazilian National High School Examination (ENEM) between 2000 and 2020, it was possible to assess the association between three pollutants and exam scores. It was concluded that from an analysis of mixed effects using the geographic level as a random effect that there is a negative association between the pollutant O³ and the results in the exam. Assssss….
 
 
-Specifically, the folder data includes the following datasets:
+Specifically, the folder data includes the following **dataset end R code:
 
-ENEM_merged_samplereport.rds: dataset (as rds file) merged in with variables contain Academic Performace and SES variables.
+ENEM_merged_samplereport.rds: a sample dataset (as rds file) from the main dataset that contains Academic Performance and SES variables used in the analysis.
     
-*R code*
 
 Modelo em looping.R reproduces all the steps of the analysis and the full results.
 
-*Dictionary of variables:*
+**Dictionary of variables:**
   NU_NOTA_REDACAO:      Writing Score
   
   NU_NOTA_OBJETIVA:     Multiple-Choice Score
