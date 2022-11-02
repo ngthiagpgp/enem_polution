@@ -15,10 +15,4 @@ Base_de_referencia.rds: original dadaset with ambiental variables.
 
 R code
 
-The five R scripts reproduces all the steps of the analysis and the full results. Specifically:
-
-00.pkg.R loads the packages.
-01.tsprep.R prepares the data in a case time series format starting from the original mortality data.
-02.linktmean.R links the gridded temperature data.
-03.mainmof.R performs the main model and a comparison with the standard time series model on fully aggregated data.
-04.intmod.R investigates the differential risks by deprivation score.
+Modelo em looping.R reproduces all the steps of the analysis and the full results.
