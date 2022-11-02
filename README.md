@@ -10,9 +10,40 @@ Several studies seek to determine the association between pollution and its heal
 
 Specifically, the folder data includes the following datasets:
 
-ENEM_merged.rds: original datasets (as rds file) merged in with comom variables contain anual scores.
-Base_de_referencia.rds: original dadaset with ambiental variables.
-
-R code
+ENEM_merged_samplereport.rds: dataset (as rds file) merged in with variables contain Academic Performace and SES variables.
+    
+*R code*
 
 Modelo em looping.R reproduces all the steps of the analysis and the full results.
+
+*Dictionary of variables:*
+  NU_NOTA_REDACAO:      Writing Score
+  NU_NOTA_OBJETIVA:     Multiple-Choice Score
+  no2_ppb:  Mean concentration of NO² ppb of Municipality of Subject
+  o3_ppb: Mean concentration of O³ ppb of Municipality of Subject
+  pm25_ugm3:Mean concentration of PM 2.5  μg/m³ of Municipality of Subject
+  NU_ANO: Year of the test score
+  IDHM: HDI of municipality in 2010
+  Q15: Income interval in alphabetic order
+  Q10: Scholarity of Father
+    B	Da 1ª a 4ª série do ensino fundamental (antigo primário)
+    C	Da 5ª a 8ª do ensino fundamental (antigo ginásio) 
+    D	Ensino Médio (2º grau) incompleto
+    E	Ensino Médio (2º grau) completo 
+    F	Ensino Superior incompleto 
+    G	Ensino Superior completo
+    H	Pós-graduação
+    I	Não sei
+  TP_DEPENDENCIA_ADM_ESC: Type of manegement:
+    1	Federal
+    2	Estadual
+    3	Municipal
+    4	Privada
+  TP_SEXO: gender
+    M Male
+    F Female
+  TP_LOCALIZACAO_ESC: School Zone
+    1	Urbana
+    2	Rural
+    
+
