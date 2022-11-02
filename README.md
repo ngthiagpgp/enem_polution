@@ -18,32 +18,43 @@ Modelo em looping.R reproduces all the steps of the analysis and the full result
 
 *Dictionary of variables:*
   NU_NOTA_REDACAO:      Writing Score
+  
   NU_NOTA_OBJETIVA:     Multiple-Choice Score
+  
   no2_ppb:  Mean concentration of NO² ppb of Municipality of Subject
+  
   o3_ppb: Mean concentration of O³ ppb of Municipality of Subject
+  
   pm25_ugm3:Mean concentration of PM 2.5  μg/m³ of Municipality of Subject
+  
   NU_ANO: Year of the test score
+  
   IDHM: HDI of municipality in 2010
+  
   Q15: Income interval in alphabetic order
+  
   Q10: Scholarity of Father
-    B	Da 1ª a 4ª série do ensino fundamental (antigo primário)
-    C	Da 5ª a 8ª do ensino fundamental (antigo ginásio) 
-    D	Ensino Médio (2º grau) incompleto
-    E	Ensino Médio (2º grau) completo 
-    F	Ensino Superior incompleto 
-    G	Ensino Superior completo
-    H	Pós-graduação
-    I	Não sei
+    B From 1st to 4th grade of elementary school (former primary)
+    C From 5th to 8th of elementary school (former gymnasium)
+    D High school (2nd grade) incomplete
+    E High School (2nd grade) completed
+    F Incomplete Higher Education
+    G Completed higher education
+    H Graduate
+    I do not know
+        
   TP_DEPENDENCIA_ADM_ESC: Type of manegement:
     1	Federal
     2	Estadual
     3	Municipal
     4	Privada
+    
   TP_SEXO: gender
     M Male
     F Female
+    
   TP_LOCALIZACAO_ESC: School Zone
-    1	Urbana
+    1	Urban
     2	Rural
     
 
