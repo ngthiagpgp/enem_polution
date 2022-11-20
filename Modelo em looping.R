@@ -74,7 +74,7 @@ resultado<-data.frame()
 a<-0
 
 for (z in repetições) {
-  samp<-slice_sample(df,prop = proporçao,weight_by = UF_Home)
+  samp <-df# slice_sample(df,prop = proporçao,weight_by = UF_Home)
   for (x in Poluente) {
     for (y in Notas) {
       gc()
