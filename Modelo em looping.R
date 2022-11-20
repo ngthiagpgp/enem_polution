@@ -1,79 +1,186 @@
-###
-### Preparação ####
+####### R code for the analysis in:#########################################################################
+# R code for the analysis in:
+#
+#  Gardin, T. N.; ;Requia, W. J. Air quality and individual-level academic performance in Brazil:
+#   A nationwide study of more than 15 million students.
+#   between 2000 and 2020. 
+#  https://doi.org/XXXXXXX/XXXXX
+#
+# 
+#######LOAD PACKAGES#########################################################################
+
 library(tidyverse)
 library(lme4)
 library(parameters)
 library(splines)
 
-df2<- readRDS("ENEM_merged.rds")
+#######DATA PREP#########################################################################
+#LOAD THE DATAFRAME
 
-df2[,1:7] <- lapply(df2[,1:7], as.numeric)
-df2[,8:13] <- lapply(df2[,8:13], as.factor)
+df <- readRDS("~/RStudio/ENEM/ENEM_merged_samplereport.rds")
 
-boxplot(as.numeric(df2$NU_NOTA_REDACAO)~df2$NU_ANO)
-df2<-df2 %>% mutate(periodo=if_else(as.numeric(NU_ANO)>2009,"pré=2008","pós-2008"))
+# Rename Variables and observations
+names(df)<- c("score_Essay", "Score_General_Subjects",
+              "airpol_no2","airpol_o3", "airpol_pm25",
+              "year" ,               
+              "Munc_HDI",                  
+              "UF_Home"  ,    
+              "income"    ,               
+              "Educ_mother",                   
+              "Manegement",
+              "gender"     ,          
+              "Location"    ,
+              "period"    )
+# 
+df$School_management[df$Manegement == "1"] <- "School management: Public"
+df$School_management[df$Manegement=="2"]<- "School management: Public"
+df$School_management[df$Manegement=="3"]<- "School management: Public"
+df$School_management[df$Manegement=="4"]<- "School management: Private"
 
-#rm(df2)
-Poluente<- c( "no2_ppb", "o3_ppb", "pm25_ugm3")# Definir Variavel Preditora
+df$Manegement<-as.factor(df$School_management)
+
+df$period<-as.factor(df$period)
+
+df$Location1[df$Location == "1"] <- "Urban"
+df$Location1[df$Location=="2"]<- "Rural"
+df$Location<-as.factor(df$Location1)
+
+# looking Variables
+df<-df %>% select(-Location1,-School_management)
+str(df)
+df %>% summary()
+df$Manegement %>% summary()
+
+
+#######Loop for models#########################################################################
+rm(list=setdiff(ls(), "df"))
+#define variables for loop
+Poluente<- c("airpol_no2","airpol_o3", "airpol_pm25")# Definir Variavel Preditora
 for (x in Poluente) {
   print(x)
 }
-Notas<- c("NU_NOTA_REDACAO","NU_NOTA_OBJETIVA")# definir Variavel Resposta
+Notas<- c("score_Essay", "Score_General_Subjects")# definir Variavel Resposta
 for (y in Notas) {
   print(y)
 }
-proporçao<- 1.0
-#subset<- "nulo"
-
-subset<-unique(df2$periodo)
-for (k in subset) {
-  print(k)
-}
-
-
+proporçao<- 0.01 # resample
 repetições <- 1:1
 for (z in repetições) {
   print(z)
 }
-a<-0
 Resultado.temp<-data.frame()
 resultado<-data.frame()
-#df1<-df2 #%>% drop_na(Q15)
+}
+a<-0
 
-### loop ####
-for (k in subset) {
-  df1<-df2 %>%  filter(periodo==k) 
+for (z in repetições) {
+  samp<-slice_sample(df,prop = proporçao,weight_by = UF_Home)
   for (x in Poluente) {
     for (y in Notas) {
-      for (z in repetições) {
-        gc()
-        b<-length(Poluente)*length(Notas)*length(repetições)*length(subset)
-        print(paste("start",x,y,z,proporçao))
+      gc()
+      b<-length(Poluente)*length(Notas)*length(repetições)
+      print(paste("start",x,y,z,"prop:",proporçao,"total:",b))
+      print(Sys.time())
+      
+      #main model####
+      
+      model<-"Only slope"
+      
+      mod_A<- lmer(
+        samp[[y]]~  samp[[x]]+ #main variables
+          #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+          (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+          #(1|UF_Home)+# intercept only vary:mixed effect variable
+          bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
+          Manegement+Location+gender,# sensitive variables
+        data =samp)
+      print("model run")
+      
+      # Extract information for results ####
+
+      n_obs <- as.numeric(nrow(samp))
+      n_group <- as.numeric(sapply(ranef(mod_A),nrow))
+      coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
+      beta <- coefficients[2]
+      # Extract SE and 95%CI
+      Vcov <- vcov(mod_A, useScale = FALSE)
+      Std_Errors <- sqrt(diag(Vcov))
+      se <- Std_Errors[2]
+      upperCI <-  beta + 1.96*se
+      lowerCI <-  beta - 1.96*se
+      # Extract P-value
+      zval <- coefficients / Std_Errors
+      pval <- 2 * pnorm(abs(zval), lower.tail = FALSE)
+      
+      pvalue <- pval[2]
+      
+      # Extract Variance of Random effects
+      
+      variances <- as.data.frame(VarCorr(mod_A))
+      variance_slope <- variances[2,4]
+      variance_intercept <- variances[1,4]
+      
+      #Extração de efeitos aleatórios
+      random_efect<-coef(mod_A)[[1]][1:2]
+      colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
+      random_efect
+      #### Tem algo de errado aqui#####
+      SE<-standard_error(mod_A, effects = "random")[[1]]
+      SE
+      #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
+      colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+      #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+      
+      fator<-rownames(random_efect)
+      Resultado.temp <-data.frame()
+      Resultado.temp<-cbind(random_efect,SE,fator)
+      
+      names(Resultado.temp)[2] <-"slope"
+      Resultado.temp$efeito_fixo<-beta
+      Resultado.temp$poluente<-x
+      Resultado.temp$nota<-y
+      Resultado.temp$subset<-"overall"
+      Resultado.temp$amostragem<- n_obs
+      Resultado.temp$N_grupos<- n_group[1]
+      Resultado.temp$lowerCI_efx<- lowerCI
+      Resultado.temp$upperCI_efx<- upperCI
+      Resultado.temp$pvalue_efx<- pvalue
+      Resultado.temp$variance_slope_efx<- variance_slope
+      Resultado.temp$teste<-paste(x,y,z,sep = ".")
+      Resultado.temp$modelo<-paste(x,y,sep = ".")
+      Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
+      Resultado.temp$model <-model
+      
+      
+      resultado <- rbind.data.frame(resultado, Resultado.temp)
+      
+      # subset: period####
+      subset<-unique(samp$period)
+      for (k in subset) {
+        samp_sub<-samp %>% filter(period==k)
+        print(k)
+        print(paste("start",k,x,y,z,"prop:",proporçao,"total:",b))
         print(Sys.time())
-        samp<-df1 %>%
-          group_by(SG_UF_RESIDENCIA) %>%
-          slice_sample(prop = proporçao)# amostragem
-        #mod_A<-lmer(samp[[y]]~samp[[x]]+(1+samp[[x]]|SG_UF_RESIDENCIA),samp)#modelo
+        #main model####
+        
+        model<-"Only slope"
+        
         mod_A<- lmer(
-          #samp[[y]] ~ samp[[x]] +Q15 +Q10+ TP_DEPENDENCIA_ADM_ESC +(1+samp[[x]]|NU_ANO)+ TP_SEXO+TP_LOCALIZACAO_ESC + (1+samp[[x]]|SG_UF_RESIDENCIA),
-          #samp[[y]] ~ samp[[x]] +Q15 +Q10+ TP_DEPENDENCIA_ADM_ESC +NU_ANO+ TP_SEXO+TP_LOCALIZACAO_ESC + (1+samp[[x]]|SG_UF_RESIDENCIA),
-          #samp[[y]] ~ samp[[x]]+TP_SEXO +Q15 +Q10+ TP_DEPENDENCIA_ADM_ESC +bs(as.numeric(NU_ANO))+ TP_SEXO+TP_LOCALIZACAO_ESC + (1+samp[[x]]|SG_UF_RESIDENCIA),
-          samp[[y]] ~ samp[[x]] +Q15 +
-            Q10+IDHM+ TP_DEPENDENCIA_ADM_ESC +
-            bs(as.numeric(NU_ANO))+ TP_SEXO+
-            TP_LOCALIZACAO_ESC +
-            (1+samp[[x]]|SG_UF_RESIDENCIA),
-          #samp[[y]] ~ samp[[x]] +Q15 +Q10+ TP_DEPENDENCIA_ADM_ESC +bs(as.numeric(NU_ANO))+ TP_LOCALIZACAO_ESC + (1+samp[[x]]|SG_UF_RESIDENCIA),
-          #samp[[y]] ~ samp[[x]]  +Q10+ Q15 +bs(as.numeric(NU_ANO))+ TP_SEXO +TP_LOCALIZACAO_ESC+ (1+samp[[x]]|SG_UF_RESIDENCIA),
+          samp[[y]]~  samp[[x]]+ #main variables
+            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+            #(1|UF_Home)+# intercept only vary:mixed effect variable
+            bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
+            Manegement+Location+gender,# sensitive variables
           data =samp)
-        print("modelo rodou")
-        samp$TP_SEXO
+        print("model run")
+        
+        # Extract information for results ####
+        
         n_obs <- as.numeric(nrow(samp))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
-        
         coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
         beta <- coefficients[2]
-        
         # Extract SE and 95%CI
         Vcov <- vcov(mod_A, useScale = FALSE)
         Std_Errors <- sqrt(diag(Vcov))
@@ -85,7 +192,9 @@ for (k in subset) {
         pval <- 2 * pnorm(abs(zval), lower.tail = FALSE)
         
         pvalue <- pval[2]
+        
         # Extract Variance of Random effects
+        
         variances <- as.data.frame(VarCorr(mod_A))
         variance_slope <- variances[2,4]
         variance_intercept <- variances[1,4]
@@ -93,10 +202,14 @@ for (k in subset) {
         #Extração de efeitos aleatórios
         random_efect<-coef(mod_A)[[1]][1:2]
         colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
-        SE<-(standard_error(mod_A, effects = "random")[[1]])
-        colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand")
+        random_efect
+        SE<-standard_error(mod_A, effects = "random")[[1]]
+        SE
+        #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
+        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        
         fator<-rownames(random_efect)
-        fator
         Resultado.temp <-data.frame()
         Resultado.temp<-cbind(random_efect,SE,fator)
         
@@ -104,7 +217,7 @@ for (k in subset) {
         Resultado.temp$efeito_fixo<-beta
         Resultado.temp$poluente<-x
         Resultado.temp$nota<-y
-        Resultado.temp$subset<-k
+        Resultado.temp$subset<-"overall"
         Resultado.temp$amostragem<- n_obs
         Resultado.temp$N_grupos<- n_group[1]
         Resultado.temp$lowerCI_efx<- lowerCI
@@ -114,63 +227,246 @@ for (k in subset) {
         Resultado.temp$teste<-paste(x,y,z,sep = ".")
         Resultado.temp$modelo<-paste(x,y,sep = ".")
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
+        Resultado.temp$model <-model
         
         
-        resultado <- rbind.data.frame(resultado, Resultado.temp)
-        a<-a+1
-        print(paste("end",x,y,z,",repeat:",round(a/b*100,digits = 3),"%"))
       }
-            }
+      # subset: manegement####
+      subset<-unique(samp$Manegement)
+      for (k in subset) {
+        print(paste("start",k,x,y,z,Sys.time()))
+        
+        #main model####
+        
+        model<-"Only slope"
+        
+        mod_A<- lmer(
+          samp[[y]]~  samp[[x]]+ #main variables
+            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+            #(1|UF_Home)+# intercept only vary:mixed effect variable
+            bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
+            Manegement+Location+gender,# sensitive variables
+          data =samp)
+        print("model run")
+        
+        # Extract information for results ####
+        
+        n_obs <- as.numeric(nrow(samp))
+        n_group <- as.numeric(sapply(ranef(mod_A),nrow))
+        coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
+        beta <- coefficients[2]
+        # Extract SE and 95%CI
+        Vcov <- vcov(mod_A, useScale = FALSE)
+        Std_Errors <- sqrt(diag(Vcov))
+        se <- Std_Errors[2]
+        upperCI <-  beta + 1.96*se
+        lowerCI <-  beta - 1.96*se
+        # Extract P-value
+        zval <- coefficients / Std_Errors
+        pval <- 2 * pnorm(abs(zval), lower.tail = FALSE)
+        
+        pvalue <- pval[2]
+        
+        # Extract Variance of Random effects
+        
+        variances <- as.data.frame(VarCorr(mod_A))
+        variance_slope <- variances[2,4]
+        variance_intercept <- variances[1,4]
+        
+        #Extração de efeitos aleatórios
+        random_efect<-coef(mod_A)[[1]][1:2]
+        colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
+        random_efect
+        SE<-standard_error(mod_A, effects = "random")[[1]]
+        SE
+        #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
+        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        
+        fator<-rownames(random_efect)
+        Resultado.temp <-data.frame()
+        Resultado.temp<-cbind(random_efect,SE,fator)
+        
+        names(Resultado.temp)[2] <-"slope"
+        Resultado.temp$efeito_fixo<-beta
+        Resultado.temp$poluente<-x
+        Resultado.temp$nota<-y
+        Resultado.temp$subset<-"overall"
+        Resultado.temp$amostragem<- n_obs
+        Resultado.temp$N_grupos<- n_group[1]
+        Resultado.temp$lowerCI_efx<- lowerCI
+        Resultado.temp$upperCI_efx<- upperCI
+        Resultado.temp$pvalue_efx<- pvalue
+        Resultado.temp$variance_slope_efx<- variance_slope
+        Resultado.temp$teste<-paste(x,y,z,sep = ".")
+        Resultado.temp$modelo<-paste(x,y,sep = ".")
+        Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
+        Resultado.temp$model <-model
+        
+        
+        
+      }
+      
+      # subset: Location####
+      subset<-unique(samp$Location)
+      for (k in subset) {
+        print(paste("start",k,x,y,z,Sys.time()))
+        #main model####
+        
+        model<-"Only slope"
+        
+        mod_A<- lmer(
+          samp[[y]]~  samp[[x]]+ #main variables
+            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+            #(1|UF_Home)+# intercept only vary:mixed effect variable
+            bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
+            Manegement+Location+gender,# sensitive variables
+          data =samp)
+        print("model run")
+        
+        # Extract information for results ####
+        
+        n_obs <- as.numeric(nrow(samp))
+        n_group <- as.numeric(sapply(ranef(mod_A),nrow))
+        coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
+        beta <- coefficients[2]
+        # Extract SE and 95%CI
+        Vcov <- vcov(mod_A, useScale = FALSE)
+        Std_Errors <- sqrt(diag(Vcov))
+        se <- Std_Errors[2]
+        upperCI <-  beta + 1.96*se
+        lowerCI <-  beta - 1.96*se
+        # Extract P-value
+        zval <- coefficients / Std_Errors
+        pval <- 2 * pnorm(abs(zval), lower.tail = FALSE)
+        
+        pvalue <- pval[2]
+        
+        # Extract Variance of Random effects
+        
+        variances <- as.data.frame(VarCorr(mod_A))
+        variance_slope <- variances[2,4]
+        variance_intercept <- variances[1,4]
+        
+        #Extração de efeitos aleatórios
+        random_efect<-coef(mod_A)[[1]][1:2]
+        colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
+        random_efect
+        SE<-standard_error(mod_A, effects = "random")[[1]]
+        SE
+        #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
+        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        
+        fator<-rownames(random_efect)
+        Resultado.temp <-data.frame()
+        Resultado.temp<-cbind(random_efect,SE,fator)
+        
+        names(Resultado.temp)[2] <-"slope"
+        Resultado.temp$efeito_fixo<-beta
+        Resultado.temp$poluente<-x
+        Resultado.temp$nota<-y
+        Resultado.temp$subset<-"overall"
+        Resultado.temp$amostragem<- n_obs
+        Resultado.temp$N_grupos<- n_group[1]
+        Resultado.temp$lowerCI_efx<- lowerCI
+        Resultado.temp$upperCI_efx<- upperCI
+        Resultado.temp$pvalue_efx<- pvalue
+        Resultado.temp$variance_slope_efx<- variance_slope
+        Resultado.temp$teste<-paste(x,y,z,sep = ".")
+        Resultado.temp$modelo<-paste(x,y,sep = ".")
+        Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
+        Resultado.temp$model <-model
+        
+        
+      }
+      # subset: gender####
+      subset<-unique(samp$gender)
+      for (k in subset) {
+        print(paste("start",k,x,y,z,Sys.time()))
+        
+              #main model####
+        
+        model<-"Only slope"
+        
+        mod_A<- lmer(
+          samp[[y]]~  samp[[x]]+ #main variables
+            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+            #(1|UF_Home)+# intercept only vary:mixed effect variable
+            bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
+            Manegement+Location+gender,# sensitive variables
+          data =samp)
+        print("model run")
+        
+        # Extract information for results ####
+        
+        n_obs <- as.numeric(nrow(samp))
+        n_group <- as.numeric(sapply(ranef(mod_A),nrow))
+        coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
+        beta <- coefficients[2]
+        # Extract SE and 95%CI
+        Vcov <- vcov(mod_A, useScale = FALSE)
+        Std_Errors <- sqrt(diag(Vcov))
+        se <- Std_Errors[2]
+        upperCI <-  beta + 1.96*se
+        lowerCI <-  beta - 1.96*se
+        # Extract P-value
+        zval <- coefficients / Std_Errors
+        pval <- 2 * pnorm(abs(zval), lower.tail = FALSE)
+        
+        pvalue <- pval[2]
+        
+        # Extract Variance of Random effects
+        
+        variances <- as.data.frame(VarCorr(mod_A))
+        variance_slope <- variances[2,4]
+        variance_intercept <- variances[1,4]
+        
+        #Extração de efeitos aleatórios
+        random_efect<-coef(mod_A)[[1]][1:2]
+        colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
+        random_efect
+        SE<-standard_error(mod_A, effects = "random")[[1]]
+        SE
+        #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
+        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        
+        fator<-rownames(random_efect)
+        Resultado.temp <-data.frame()
+        Resultado.temp<-cbind(random_efect,SE,fator)
+        
+        names(Resultado.temp)[2] <-"slope"
+        Resultado.temp$efeito_fixo<-beta
+        Resultado.temp$poluente<-x
+        Resultado.temp$nota<-y
+        Resultado.temp$subset<-"overall"
+        Resultado.temp$amostragem<- n_obs
+        Resultado.temp$N_grupos<- n_group[1]
+        Resultado.temp$lowerCI_efx<- lowerCI
+        Resultado.temp$upperCI_efx<- upperCI
+        Resultado.temp$pvalue_efx<- pvalue
+        Resultado.temp$variance_slope_efx<- variance_slope
+        Resultado.temp$teste<-paste(x,y,z,sep = ".")
+        Resultado.temp$modelo<-paste(x,y,sep = ".")
+        Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
+        Resultado.temp$model <-model
+        
+        
+      }
+      a<-a+1
+      print(paste("end",x,y,z,",repeat:",round(a/b*100,digits = 3),"%"))
+      
+    }
   }
-}
-table(is.na(df1$IDHM))
-♣rm(x,y,z)
-### salvar ####
-saveRDS(resultado,paste("Resultado_idh","TP_2009","prop",proporçao,"rep",length(repetições),"modelo_bs_sex",sep = "_"))
-
-#saveRDS(resultado,paste("Resultado","prop",proporçao,"rep",length(repetições),"modelo_base",sep = "_"))
-### Analise do resultado ####
-R <-resultado %>% mutate(lowerCI=slope-1.96*SE_Slope_rand,upperCI=slope+1.96*SE_Slope_rand) %>% 
-  mutate(sinal=ifelse(lowerCI>0,"Positivo",ifelse(upperCI<0,"Negativo","null")))
-table(R$sinal,R$poluente)
-table(R$modelo,R$sinal)
-table(R$subset,R$sinal)
-
-R %>%   ggplot(aes(x=slope,y=fator,xmin=lowerCI,xmax=upperCI,col=sinal))+
-  #geom_point(alpha=0.5)+
-  geom_pointrange(alpha=0.5)+facet_grid(nota*subset~poluente,scales = "free")+
-  geom_vline(xintercept = 0, color = "red", size=0.1,alpha=0.5)+
-  geom_errorbar(alpha=0.5)+
-  labs(title = "Modelo mistos",
-       subtitle = R$formula,
-       caption = "EPPG FGV")+xlab("Slope")+ylab("Estado")
-
-R %>%   ggplot(aes(x=slope,y=nota,xmin=lowerCI,xmax=upperCI,col=sinal))+
-  #geom_point(alpha=0.5)+
-  geom_pointrange(alpha=0.5)+facet_grid(fator~poluente,scales = "free")+
-  geom_vline(xintercept = 0, color = "red", size=0.1,alpha=0.5)+
-  geom_errorbar(alpha=0.5)+
-  labs(title = "Modelo mistos",
-       subtitle = R$formula,
-       caption = "EPPG FGV")+xlab("Slope")+ylab("Estado")
-
-resultado$sinal<-ifelse(resultado$lowerCI_efx>0,"Positivo",ifelse(resultado$upperCI_efx<0,"Negativo","null"))
-summary(mod_A)
-R2<-resultado[6:19] %>% distinct() 
-table(R2$modelo,R2$sinal,R2$subset)
-table(R2$sinal)
-R2 %>%   ggplot(aes(x=efeito_fixo,y=teste,xmin=lowerCI_efx,xmax=upperCI_efx,col=sinal))+geom_point(alpha=0.3)+
-  geom_pointrange(alpha=0.5)+
-  facet_grid(subset*nota~poluente,scales = "free")+
-  geom_vline(xintercept = 0, color = "red", size=0.1,alpha=0.5)+
   
-  #geom_errorbar(alpha=0.5)+
-  labs(title = "Modelo mistos",
-       subtitle =R$formula,
-       caption = "EPPG FGV")+xlab("Slope")+ylab("Estado")
-summary(mod_A)
+}
+resultado[,4]<-lapply(resultado[,4], as.factor)
+resultado[,6:8]<-lapply(resultado[,6:8], as.factor)
+resultado[,15:18]<-lapply(resultado[,15:18], as.factor)
 
-summary(resultado$amostragem)
-
-saveRDS(resultado,paste0("Resultado principal sem ano"))
-summary(resultado$pvalue_efx)
+write_rds(resultado, "Model_Resultas_Slope")
+summary(resultado)
