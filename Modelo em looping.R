@@ -17,9 +17,24 @@ library(splines)
 #######DATA PREP#########################################################################
 #LOAD THE DATAFRAME
 
-df <- readRDS("~/RStudio/ENEM/ENEM_merged_samplereport.rds")
+df<- readRDS("~/ENEM/base de referencia 2.rds")
+df <-df %>% select(NU_NOTA_REDACAO,NU_NOTA_OBJETIVA,
+                   no2_ppb,o3_ppb,pm25_ugm3,
+                   NU_ANO,
+                   IDHM,
+                   SG_UF_RESIDENCIA,
+                   Q15,
+                   Q10,
+                   TP_DEPENDENCIA_ADM_ESC,
+                   TP_SEXO,TP_LOCALIZACAO_ESC,CO_MUNICIPIO_RESIDENCIA) %>% 
+  drop_na(NU_NOTA_REDACAO,NU_NOTA_OBJETIVA,no2_ppb,o3_ppb,pm25_ugm3,SG_UF_RESIDENCIA)#selecionar variaveis de interesse 
+
+df[,1:7] <- lapply(df[,1:7], as.numeric)
+df[,8:14] <- lapply(df[,8:14], as.factor)
 
 # Rename Variables and observations
+
+df<-df %>% mutate(periodo=if_else(as.numeric(NU_ANO)>2009,"pré-2008","pós-2008"))
 names(df)<- c("score_Essay", "Score_General_Subjects",
               "airpol_no2","airpol_o3", "airpol_pm25",
               "year" ,               
@@ -30,6 +45,7 @@ names(df)<- c("score_Essay", "Score_General_Subjects",
               "Manegement",
               "gender"     ,          
               "Location"    ,
+              "Codigo_municipio",
               "period"    )
 # 
 df$School_management[df$Manegement == "1"] <- "School management: Public"
@@ -45,11 +61,18 @@ df$Location1[df$Location == "1"] <- "Urban"
 df$Location1[df$Location=="2"]<- "Rural"
 df$Location<-as.factor(df$Location1)
 
+df$gender1[df$gender =="M"] <- "Male"
+df$gender1[df$gender=="F"]<- "Female"
+df$gender<-as.factor(df$gender1)
+
+
 # looking Variables
-df<-df %>% select(-Location1,-School_management)
+df<-df %>% select(-Location1,-School_management,-gender1)
 str(df)
 df %>% summary()
-df$Manegement %>% summary()
+write_rds(df,"Analysis base.rds")
+#df<- readRDS("~/ENEM/Analysis base.rds")
+df<- df %>% drop_na(Manegement,Location,gender)
 
 
 #######Loop for models#########################################################################
@@ -63,18 +86,20 @@ Notas<- c("score_Essay", "Score_General_Subjects")# definir Variavel Resposta
 for (y in Notas) {
   print(y)
 }
-proporçao<- 0.01 # resample
+proporçao<- 0.001 # resample
 repetições <- 1:1
 for (z in repetições) {
   print(z)
 }
 Resultado.temp<-data.frame()
 resultado<-data.frame()
-}
+
 a<-0
 
 for (z in repetições) {
-  samp <-df# slice_sample(df,prop = proporçao,weight_by = UF_Home)
+  samp <-
+    slice_sample(df,prop = proporçao,weight_by = UF_Home)
+    #df
   for (x in Poluente) {
     for (y in Notas) {
       gc()
@@ -82,7 +107,7 @@ for (z in repetições) {
       print(paste("start",x,y,z,"prop:",proporçao,"total:",b))
       print(Sys.time())
       
-      #main model####
+      # main model####
       
       model<-"Only slope"
       
@@ -97,7 +122,7 @@ for (z in repetições) {
       print("model run")
       
       # Extract information for results ####
-
+      
       n_obs <- as.numeric(nrow(samp))
       n_group <- as.numeric(sapply(ranef(mod_A),nrow))
       coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
@@ -124,7 +149,6 @@ for (z in repetições) {
       random_efect<-coef(mod_A)[[1]][1:2]
       colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
       random_efect
-      #### Tem algo de errado aqui#####
       SE<-standard_error(mod_A, effects = "random")[[1]]
       SE
       #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
@@ -155,7 +179,8 @@ for (z in repetições) {
       resultado <- rbind.data.frame(resultado, Resultado.temp)
       
       # subset: period####
-      subset<-unique(samp$period)
+      samp<- df %>% drop_na(period)
+      subset<-unique(samp$period) 
       for (k in subset) {
         samp_sub<-samp %>% filter(period==k)
         print(k)
@@ -231,7 +256,9 @@ for (z in repetições) {
         
         
       }
+      
       # subset: manegement####
+      samp<- df %>% drop_na(Manegement)
       subset<-unique(samp$Manegement)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
@@ -309,6 +336,8 @@ for (z in repetições) {
       }
       
       # subset: Location####
+      samp<- df %>% drop_na(Location)
+      
       subset<-unique(samp$Location)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
@@ -383,11 +412,13 @@ for (z in repetições) {
         
       }
       # subset: gender####
+      samp<- df %>% drop_na(gender)
+      
       subset<-unique(samp$gender)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
         
-              #main model####
+        #main model####
         
         model<-"Only slope"
         
