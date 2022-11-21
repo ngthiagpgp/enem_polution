@@ -87,7 +87,7 @@ Notas<- c("score_Essay", "Score_General_Subjects")# definir Variavel Resposta
 for (y in Notas) {
   print(y)
 }
-proporçao<- 0.001 # resample
+proporçao<- 1 # resample
 repetições <- 1:1
 for (z in repetições) {
   print(z)
@@ -99,8 +99,8 @@ a<-0
 #startLoop ####
 for (z in repetições) {
   samp <-
-    slice_sample(df,prop = proporçao,weight_by = UF_Home)
-    ###df
+    #slice_sample(df,prop = proporçao,weight_by = UF_Home)
+    df
   for (x in Poluente) {
     for (y in Notas) {
       gc()
