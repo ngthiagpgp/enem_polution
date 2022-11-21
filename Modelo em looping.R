@@ -76,8 +76,9 @@ df<- df %>% drop_na(Manegement,Location,gender)
 
 
 #######Loop for models#########################################################################
+
 rm(list=setdiff(ls(), "df"))
-#define variables for loop
+#Define variables for loop####
 Poluente<- c("airpol_no2","airpol_o3", "airpol_pm25")# Definir Variavel Preditora
 for (x in Poluente) {
   print(x)
@@ -95,19 +96,19 @@ Resultado.temp<-data.frame()
 resultado<-data.frame()
 
 a<-0
-
+#startLoop ####
 for (z in repetições) {
   samp <-
     slice_sample(df,prop = proporçao,weight_by = UF_Home)
-    #df
+    ###df
   for (x in Poluente) {
     for (y in Notas) {
       gc()
       b<-length(Poluente)*length(Notas)*length(repetições)
-      print(paste("start",x,y,z,"prop:",proporçao,"total:",b))
-      print(Sys.time())
-      
-      # main model####
+      print(paste("start",x,y,z,"prop:",proporçao,"total:",b, Sys.time()))
+
+            
+## main model#########
       
       model<-"Only slope"
       
@@ -121,7 +122,7 @@ for (z in repetições) {
         data =samp)
       print("model run")
       
-      # Extract information for results ####
+      ## Extract information for results ####
       
       n_obs <- as.numeric(nrow(samp))
       n_group <- as.numeric(sapply(ranef(mod_A),nrow))
@@ -179,14 +180,15 @@ for (z in repetições) {
       resultado <- rbind.data.frame(resultado, Resultado.temp)
       
       # subset: period####
-      samp<- df %>% drop_na(period)
+      #samp<- df %>% drop_na(period)
       subset<-unique(samp$period) 
+      
       for (k in subset) {
         samp_sub<-samp %>% filter(period==k)
         print(k)
         print(paste("start",k,x,y,z,"prop:",proporçao,"total:",b))
         print(Sys.time())
-        #main model####
+        ##main model####
         
         model<-"Only slope"
         
@@ -242,7 +244,7 @@ for (z in repetições) {
         Resultado.temp$efeito_fixo<-beta
         Resultado.temp$poluente<-x
         Resultado.temp$nota<-y
-        Resultado.temp$subset<-"overall"
+        Resultado.temp$subset<-k
         Resultado.temp$amostragem<- n_obs
         Resultado.temp$N_grupos<- n_group[1]
         Resultado.temp$lowerCI_efx<- lowerCI
@@ -257,13 +259,13 @@ for (z in repetições) {
         
       }
       
-      # subset: manegement####
+      ## subset: manegement####
       samp<- df %>% drop_na(Manegement)
       subset<-unique(samp$Manegement)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
         
-        #main model####
+        ###main model####
         
         model<-"Only slope"
         
@@ -277,7 +279,7 @@ for (z in repetições) {
           data =samp)
         print("model run")
         
-        # Extract information for results ####
+        ## Extract information for results ####
         
         n_obs <- as.numeric(nrow(samp))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
@@ -319,7 +321,7 @@ for (z in repetições) {
         Resultado.temp$efeito_fixo<-beta
         Resultado.temp$poluente<-x
         Resultado.temp$nota<-y
-        Resultado.temp$subset<-"overall"
+        Resultado.temp$subset<-k
         Resultado.temp$amostragem<- n_obs
         Resultado.temp$N_grupos<- n_group[1]
         Resultado.temp$lowerCI_efx<- lowerCI
@@ -335,13 +337,13 @@ for (z in repetições) {
         
       }
       
-      # subset: Location####
+      ## subset: Location####
       samp<- df %>% drop_na(Location)
       
       subset<-unique(samp$Location)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
-        #main model####
+        ###main model####
         
         model<-"Only slope"
         
@@ -355,7 +357,7 @@ for (z in repetições) {
           data =samp)
         print("model run")
         
-        # Extract information for results ####
+        ## Extract information for results ####
         
         n_obs <- as.numeric(nrow(samp))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
@@ -397,7 +399,7 @@ for (z in repetições) {
         Resultado.temp$efeito_fixo<-beta
         Resultado.temp$poluente<-x
         Resultado.temp$nota<-y
-        Resultado.temp$subset<-"overall"
+        Resultado.temp$subset<-k
         Resultado.temp$amostragem<- n_obs
         Resultado.temp$N_grupos<- n_group[1]
         Resultado.temp$lowerCI_efx<- lowerCI
@@ -411,14 +413,14 @@ for (z in repetições) {
         
         
       }
-      # subset: gender####
+      ## subset: gender####
       samp<- df %>% drop_na(gender)
       
       subset<-unique(samp$gender)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
         
-        #main model####
+        ###main model####
         
         model<-"Only slope"
         
@@ -432,7 +434,7 @@ for (z in repetições) {
           data =samp)
         print("model run")
         
-        # Extract information for results ####
+        ## Extract information for results ####
         
         n_obs <- as.numeric(nrow(samp))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
@@ -474,7 +476,7 @@ for (z in repetições) {
         Resultado.temp$efeito_fixo<-beta
         Resultado.temp$poluente<-x
         Resultado.temp$nota<-y
-        Resultado.temp$subset<-"overall"
+        Resultado.temp$subset<-k
         Resultado.temp$amostragem<- n_obs
         Resultado.temp$N_grupos<- n_group[1]
         Resultado.temp$lowerCI_efx<- lowerCI
@@ -495,6 +497,10 @@ for (z in repetições) {
   }
   
 }
+
+
+#Save Results############
+
 resultado[,4]<-lapply(resultado[,4], as.factor)
 resultado[,6:8]<-lapply(resultado[,6:8], as.factor)
 resultado[,15:18]<-lapply(resultado[,15:18], as.factor)
