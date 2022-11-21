@@ -260,7 +260,7 @@ for (z in repetições) {
       }
       
       ## subset: manegement####
-      samp<- df %>% drop_na(Manegement)
+      #samp<- df %>% drop_na(Manegement)
       subset<-unique(samp$Manegement)
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
@@ -338,7 +338,7 @@ for (z in repetições) {
       }
       
       ## subset: Location####
-      samp<- df %>% drop_na(Location)
+      #samp<- df %>% drop_na(Location)
       
       subset<-unique(samp$Location)
       for (k in subset) {
@@ -414,7 +414,7 @@ for (z in repetições) {
         
       }
       ## subset: gender####
-      samp<- df %>% drop_na(gender)
+      #samp<- df %>% drop_na(gender)
       
       subset<-unique(samp$gender)
       for (k in subset) {
