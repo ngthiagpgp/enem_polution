@@ -99,8 +99,8 @@ a<-0
 #startLoop ####
 for (z in repetições) {
   samp <-
-    slice_sample(df,prop = proporçao,weight_by = UF_Home)
-  ###df
+    #slice_sample(df,prop = proporçao,weight_by = UF_Home)
+    df
   for (x in Poluente) {
     for (y in Notas) {
       gc()
