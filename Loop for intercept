@@ -71,9 +71,8 @@ df<-df %>% select(-Location1,-School_management,-gender1)
 str(df)
 df %>% summary()
 write_rds(df,"Analysis base.rds")
-#df<- readRDS("~/ENEM/Analysis base.rds")
+df<- readRDS("~/ENEM/Analysis base.rds")
 df<- df %>% drop_na(Manegement,Location,gender)
-
 
 #######Loop for models#########################################################################
 
@@ -87,7 +86,7 @@ Notas<- c("score_Essay", "Score_General_Subjects")# definir Variavel Resposta
 for (y in Notas) {
   print(y)
 }
-proporçao<- 0.01 # resample
+proporçao<- 1 # resample
 repetições <- 1:1
 for (z in repetições) {
   print(z)
@@ -182,6 +181,7 @@ for (z in repetições) {
       # subset: period####
       #samp<- df %>% drop_na(period)
       subset<-unique(samp$period) 
+      gc()
       
       for (k in subset) {
         samp_sub<-samp %>% filter(period==k)
@@ -197,7 +197,7 @@ for (z in repetições) {
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
             Manegement+Location+gender,# sensitive variables
-          data =samp)
+          data =samp_sub)
         print("model run")
         
         # Extract information for results ####
@@ -254,12 +254,16 @@ for (z in repetições) {
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
         
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
+        
         
       }
       
       ## subset: manegement####
-      samp<- df %>% drop_na(Manegement)
+      #samp<- df %>% drop_na(Manegement)
       subset<-unique(samp$Manegement)
+      gc()
+      
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
         
@@ -272,8 +276,8 @@ for (z in repetições) {
             #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
-            Manegement+Location+gender,# sensitive variables
-          data =samp)
+            Location+gender,# sensitive variables
+          data =samp_sub)
         print("model run")
         
         ## Extract information for results ####
@@ -330,12 +334,13 @@ for (z in repetições) {
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
         
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
         
         
       }
       
       ## subset: Location####
-      samp<- df %>% drop_na(Location)
+      #samp<- df %>% drop_na(Location)
       
       subset<-unique(samp$Location)
       for (k in subset) {
@@ -349,8 +354,8 @@ for (z in repetições) {
             #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
-            Manegement+Location+gender,# sensitive variables
-          data =samp)
+            Manegement+gender,# sensitive variables
+          data =samp_sub)
         print("model run")
         
         ## Extract information for results ####
@@ -407,10 +412,13 @@ for (z in repetições) {
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
         
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
+        
         
       }
       ## subset: gender####
       #samp<- df %>% drop_na(gender)
+      gc()
       
       subset<-unique(samp$gender)
       for (k in subset) {
@@ -425,8 +433,8 @@ for (z in repetições) {
             #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
-            Manegement+Location+gender,# sensitive variables
-          data =samp)
+            Manegement+Location,# sensitive variables
+          data =samp_sub)
         print("model run")
         
         ## Extract information for results ####
@@ -482,6 +490,7 @@ for (z in repetições) {
         Resultado.temp$modelo<-paste(x,y,sep = ".")
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
         
         
       }
@@ -500,5 +509,5 @@ resultado[,4]<-lapply(resultado[,4], as.factor)
 resultado[,6:8]<-lapply(resultado[,6:8], as.factor)
 resultado[,15:18]<-lapply(resultado[,15:18], as.factor)
 
-write_rds(resultado, "Model_Resultas_Slope")
+write_rds(resultado, "Model_Resultas_Intercept")
 summary(resultado)
