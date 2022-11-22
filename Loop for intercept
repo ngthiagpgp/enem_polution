@@ -191,18 +191,18 @@ for (z in repetições) {
         ##main model####
         
         mod_A<- lmer(
-          samp[[y]]~  samp[[x]]+ #main variables
-            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
-            #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+          samp_sub[[y]]~  samp_sub[[x]]+ #main variables
+            #(1+samp_sub[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            #(0+samp_sub[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
             Manegement+Location+gender,# sensitive variables
-          data =samp_sub)
+          data = samp_sub)
         print("model run")
         
         # Extract information for results ####
         
-        n_obs <- as.numeric(nrow(samp))
+        n_obs <- as.numeric(nrow(samp_sub))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
         coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
         beta <- coefficients[2]
@@ -265,15 +265,18 @@ for (z in repetições) {
       gc()
       
       for (k in subset) {
+        samp_sub<-samp %>% filter(Manegement==k)
+        print(k)
+        
         print(paste("start",k,x,y,z,Sys.time()))
         
         ###main model####
         
         
         mod_A<- lmer(
-          samp[[y]]~  samp[[x]]+ #main variables
-            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
-            #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+          samp_sub[[y]]~  samp_sub[[x]]+ #main variables
+            #(1+samp_sub[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            #(0+samp_sub[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
             Location+gender,# sensitive variables
@@ -282,7 +285,7 @@ for (z in repetições) {
         
         ## Extract information for results ####
         
-        n_obs <- as.numeric(nrow(samp))
+        n_obs <- as.numeric(nrow(samp_sub))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
         coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
         beta <- coefficients[2]
@@ -344,14 +347,16 @@ for (z in repetições) {
       
       subset<-unique(samp$Location)
       for (k in subset) {
+        samp_sub<-samp %>% filter(Location==k)
+        print(k)
         print(paste("start",k,x,y,z,Sys.time()))
         ###main model####
         
         
         mod_A<- lmer(
-          samp[[y]]~  samp[[x]]+ #main variables
-            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
-            #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+          samp_sub[[y]]~  samp_sub[[x]]+ #main variables
+            #(1+samp_sub[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            #(0+samp_sub[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
             Manegement+gender,# sensitive variables
@@ -360,7 +365,7 @@ for (z in repetições) {
         
         ## Extract information for results ####
         
-        n_obs <- as.numeric(nrow(samp))
+        n_obs <- as.numeric(nrow(samp_sub))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
         coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
         beta <- coefficients[2]
@@ -422,15 +427,17 @@ for (z in repetições) {
       
       subset<-unique(samp$gender)
       for (k in subset) {
+        samp_sub<-samp %>% filter(Location==k)
+        print(k)
         print(paste("start",k,x,y,z,Sys.time()))
         
         ###main model####
         
         
         mod_A<- lmer(
-          samp[[y]]~  samp[[x]]+ #main variables
-            #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
-            #(0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
+          samp_sub[[y]]~  samp_sub[[x]]+ #main variables
+            #(1+samp_sub[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
+            #(0+samp_sub[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             (1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
             Manegement+Location,# sensitive variables
@@ -439,7 +446,7 @@ for (z in repetições) {
         
         ## Extract information for results ####
         
-        n_obs <- as.numeric(nrow(samp))
+        n_obs <- as.numeric(nrow(samp_sub))
         n_group <- as.numeric(sapply(ranef(mod_A),nrow))
         coefficients <- fixef(mod_A)#extração de coeficientes de efeito fixo
         beta <- coefficients[2]
