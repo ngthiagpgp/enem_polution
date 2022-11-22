@@ -71,9 +71,8 @@ df<-df %>% select(-Location1,-School_management,-gender1)
 str(df)
 df %>% summary()
 write_rds(df,"Analysis base.rds")
-#df<- readRDS("~/ENEM/Analysis base.rds")
+df<- readRDS("~/ENEM/Analysis base.rds")
 df<- df %>% drop_na(Manegement,Location,gender)
-
 
 #######Loop for models#########################################################################
 
@@ -106,11 +105,11 @@ for (z in repetições) {
       gc()
       b<-length(Poluente)*length(Notas)*length(repetições)
       print(paste("start",x,y,z,"prop:",proporçao,"total:",b, Sys.time()))
-
-            
-## main model#########
       
-      model<-"Only slope"
+      
+      ## main model#########
+      
+      model<-"Only Intercept"
       
       mod_A<- lmer(
         samp[[y]]~  samp[[x]]+ #main variables
@@ -149,12 +148,12 @@ for (z in repetições) {
       #Extração de efeitos aleatórios
       random_efect<-coef(mod_A)[[1]][1:2]
       colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
-      random_efect
+      #random_efect
       SE<-standard_error(mod_A, effects = "random")[[1]]
-      SE
+      #standard_error(mod_A, effects = "random")
       #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
-      colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
-      #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+      #colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+      colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
       
       fator<-rownames(random_efect)
       Resultado.temp <-data.frame()
@@ -182,6 +181,7 @@ for (z in repetições) {
       # subset: period####
       #samp<- df %>% drop_na(period)
       subset<-unique(samp$period) 
+      gc()
       
       for (k in subset) {
         samp_sub<-samp %>% filter(period==k)
@@ -190,8 +190,6 @@ for (z in repetições) {
         print(Sys.time())
         ##main model####
         
-        model<-"Only slope"
-        
         mod_A<- lmer(
           samp[[y]]~  samp[[x]]+ #main variables
             #(1+samp[[x]]|UF_Home)+# slope and intercept vary:mixed effect variable
@@ -199,7 +197,7 @@ for (z in repetições) {
             #(1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
             Manegement+Location+gender,# sensitive variables
-          data =samp)
+          data =samp_sub)
         print("model run")
         
         # Extract information for results ####
@@ -233,8 +231,8 @@ for (z in repetições) {
         SE<-standard_error(mod_A, effects = "random")[[1]]
         SE
         #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
-        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
-        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        #colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
         
         fator<-rownames(random_efect)
         Resultado.temp <-data.frame()
@@ -256,18 +254,21 @@ for (z in repetições) {
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
         
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
+        
         
       }
       
       ## subset: manegement####
       #samp<- df %>% drop_na(Manegement)
       subset<-unique(samp$Manegement)
+      gc()
+      
       for (k in subset) {
         print(paste("start",k,x,y,z,Sys.time()))
         
         ###main model####
         
-        model<-"Only slope"
         
         mod_A<- lmer(
           samp[[y]]~  samp[[x]]+ #main variables
@@ -275,8 +276,8 @@ for (z in repetições) {
             (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             #(1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
-            Manegement+Location+gender,# sensitive variables
-          data =samp)
+            Location+gender,# sensitive variables
+          data =samp_sub)
         print("model run")
         
         ## Extract information for results ####
@@ -308,10 +309,10 @@ for (z in repetições) {
         colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
         random_efect
         SE<-standard_error(mod_A, effects = "random")[[1]]
-        SE
+        #SE
         #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
-        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
-        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        #colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
         
         fator<-rownames(random_efect)
         Resultado.temp <-data.frame()
@@ -333,6 +334,7 @@ for (z in repetições) {
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
         
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
         
         
       }
@@ -345,7 +347,6 @@ for (z in repetições) {
         print(paste("start",k,x,y,z,Sys.time()))
         ###main model####
         
-        model<-"Only slope"
         
         mod_A<- lmer(
           samp[[y]]~  samp[[x]]+ #main variables
@@ -353,8 +354,8 @@ for (z in repetições) {
             (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             #(1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
-            Manegement+Location+gender,# sensitive variables
-          data =samp)
+            Manegement+gender,# sensitive variables
+          data =samp_sub)
         print("model run")
         
         ## Extract information for results ####
@@ -386,10 +387,10 @@ for (z in repetições) {
         colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
         random_efect
         SE<-standard_error(mod_A, effects = "random")[[1]]
-        SE
+        #SE
         #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
-        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
-        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        #colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
         
         fator<-rownames(random_efect)
         Resultado.temp <-data.frame()
@@ -411,10 +412,13 @@ for (z in repetições) {
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
         
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
+        
         
       }
       ## subset: gender####
       #samp<- df %>% drop_na(gender)
+      gc()
       
       subset<-unique(samp$gender)
       for (k in subset) {
@@ -422,7 +426,6 @@ for (z in repetições) {
         
         ###main model####
         
-        model<-"Only slope"
         
         mod_A<- lmer(
           samp[[y]]~  samp[[x]]+ #main variables
@@ -430,8 +433,8 @@ for (z in repetições) {
             (0+samp[[x]]|UF_Home)+# slope only  vary:mixed effect variable 
             #(1|UF_Home)+# intercept only vary:mixed effect variable
             bs(as.numeric(year))+Educ_mother+income+Munc_HDI+#standat control variables
-            Manegement+Location+gender,# sensitive variables
-          data =samp)
+            Manegement+Location,# sensitive variables
+          data =samp_sub)
         print("model run")
         
         ## Extract information for results ####
@@ -463,10 +466,10 @@ for (z in repetições) {
         colnames(random_efect) <- c("Intercept_rand", "Slope_rand")
         random_efect
         SE<-standard_error(mod_A, effects = "random")[[1]]
-        SE
+        #SE
         #colnames(SE) <- c("SE_Intercept_rand", "SE_Slope_rand") # if slope and intercept model
-        colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
-        #colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
+        #colnames(SE) <- c("SE_Slope_rand")# if onlyslope  model
+        colnames(SE) <- c("SE_Intercept_rand")# if only intercept model
         
         fator<-rownames(random_efect)
         Resultado.temp <-data.frame()
@@ -487,6 +490,7 @@ for (z in repetições) {
         Resultado.temp$modelo<-paste(x,y,sep = ".")
         Resultado.temp$formula<-as.character(summary(mod_A)[[15]])[2]
         Resultado.temp$model <-model
+        resultado <- rbind.data.frame(resultado, Resultado.temp)
         
         
       }
@@ -505,5 +509,5 @@ resultado[,4]<-lapply(resultado[,4], as.factor)
 resultado[,6:8]<-lapply(resultado[,6:8], as.factor)
 resultado[,15:18]<-lapply(resultado[,15:18], as.factor)
 
-write_rds(resultado, "Model_Resultas_Slope")
+write_rds(resultado, "Model_Resultas_Intercept")
 summary(resultado)
